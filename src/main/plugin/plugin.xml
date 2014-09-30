@@ -1,0 +1,12 @@
+<plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:noNamespaceSchemaLocation="http://www.jivesoftware.com/schemas/clearspace/1_1/plugin.xsd">
+	<name>${project.artifactId}</name>
+	<description>${project.description}</description>
+	<author>${project.developers[0].name}</author>
+	<authorURL>${project.developers[0].url}</authorURL>
+	<pluginURL>${project.url}</pluginURL>
+	<version>${project.version}</version>
+	<minServerVersion>${jive.min.version}</minServerVersion>
+	<maxServerVersion>${jive.max.version}</maxServerVersion>
+
+</plugin>
