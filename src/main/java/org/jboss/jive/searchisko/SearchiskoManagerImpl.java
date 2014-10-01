@@ -21,6 +21,12 @@ import com.jivesoftware.community.lifecycle.ApplicationStateChangeEvent;
  */
 public class SearchiskoManagerImpl implements SearchiskoManager, EventListener<ApplicationStateChangeEvent> {
 
+	public static final String CFG_KEY_SEARCHISKO_URL = "jbossorg.searchisko.url";
+
+	public static final String CFG_KEY_SEARCHISKO_NAME = "jbossorg.searchisko.auth.name";
+
+	public static final String CFG_KEY_SEARCHISKO_PASSWORD = "jbossorg.searchisko.auth.password";
+
 	/**
 	 * Set of usernames that needs to be updated
 	 */
@@ -45,10 +51,6 @@ public class SearchiskoManagerImpl implements SearchiskoManager, EventListener<A
 	@Override
 	public void accountChanged(String username) {
 		accountsToUpdate.add(username);
-	}
-
-	public static boolean userProfileChanged(Set<Long> changedProfileIds) {
-		return true;
 	}
 
 }

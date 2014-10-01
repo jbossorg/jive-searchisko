@@ -8,5 +8,6 @@ http://www.springframework.org/schema/util http://www.springframework.org/schema
 	<bean class="org.jboss.jive.searchisko.SearchiskoManagerImpl"/>
 
 	<bean class="org.jboss.jive.searchisko.listener.NotifySearchiskoOnProfileChangeListener"/>
+	<bean class="org.jboss.jive.searchisko.listener.NotifySearchiskoOnUserChangeListener"/>
 
 </beans>

@@ -6,10 +6,26 @@
 package org.jboss.jive.searchisko;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
+import com.jivesoftware.community.JiveGlobals;
+import org.apache.commons.httpclient.Credentials;
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthScope;
+import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * Executor for notifying Searchisko about changed usernames
@@ -26,9 +42,10 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 
 	private int startOffsetInMs;
 
-	private static final String METHOD_POST = "POST";
+	public static final String CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_ENABLED = "jbossorg.searchisko.profile.notify.enabled";
 
-	public static final String CHARSET_UTF8 = "UTF-8";
+	public static final String CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_INTERVAL = "jbossorg.searchisko.profile.notify.interval";
+
 
 	private static final String REST_API = "/v1/rest/tasks/task/update_contributor_profile";
 
@@ -38,6 +55,10 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 		super("SearchiskoUpdateAccountProfileExecutor-" + executorNumber);
 		this.accountsToUpdate = accountsToUpdate;
 		this.startOffsetInMs = startOffsetInMs;
+	}
+
+	public static boolean isEnabled() {
+		return JiveGlobals.getJiveBooleanProperty(CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_ENABLED, true);
 	}
 
 	@Override
@@ -55,9 +76,10 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 		}
 
 		running = true;
-		final int intervalInSec = 5;
 
 		while (running) {
+			// Get interval in seconds. Default is 10 sec.
+			final int intervalInSec = JiveGlobals.getJiveIntProperty(CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_INTERVAL, 10);
 			try {
 				Thread.sleep(intervalInSec * 1000);
 			} catch (InterruptedException e) {
@@ -67,10 +89,25 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 			}
 
 			try {
-				if (accountsToUpdate.size() > 0) {
-					submitForm(accountsToUpdate);
+				if (isEnabled()) {
+					if (accountsToUpdate.size() > 0) {
+						String searchiskoUrl = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_URL);
+						String searchiskoName = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_NAME);
+						String searchiskoPwd = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_PASSWORD);
+
+						if (StringUtils.isBlank(searchiskoUrl)) {
+							log.error("Configuration problem. Searchisko URL cannot be null");
+							JiveGlobals.setJiveProperty(CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_ENABLED, false);
+						} else {
+							HttpClient client = createDefaultClient(searchiskoUrl, searchiskoName, searchiskoPwd);
+
+							submitData(client, accountsToUpdate, searchiskoUrl);
+						}
+					} else {
+						log.trace("Nothing in the searchisko queue");
+					}
 				} else {
-					log.trace("Nothing in the searchisko queue");
+					log.debug("Searchisko notification is disabled");
 				}
 			} catch (Exception e) {
 				log.error("Cannot update User in Searchisko.", e);
@@ -78,11 +115,93 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 		}
 	}
 
-	protected void submitForm(Set<String> accountsToUpdate) throws IOException {
+	protected static HttpClient createDefaultClient(String searchiskoUrl, String searchiskoName, String searchiskoPwd) throws IOException, GeneralSecurityException {
+		HttpClient client = new HttpClient();
+
+		if (searchiskoName != null && searchiskoPwd != null) {
+			client.getParams().setAuthenticationPreemptive(true);
+			Credentials credentials = new UsernamePasswordCredentials(searchiskoName, searchiskoPwd);
+			client.getState().setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT, AuthScope.ANY_REALM), credentials);
+		}
+
+//		It's assumed that SSL layer is configured properly and there is no need to use dummy ssl socket factory
+
+//		if (searchiskoUrl.startsWith("https://")) {
+//			String host = searchiskoUrl.substring(8);
+//			Protocol myhttps = new Protocol("https", new EasySSLProtocolSocketFactory(), 443);
+//			client.getHostConfiguration().setHost(host, 443, myhttps);
+//		}
+
+		return client;
+	}
+
+	/**
+	 * Submit data to searchisko
+	 *
+	 * @param accountsToUpdate set of usernames. Cannot be null or emtpy set
+	 * @param searchiskoUrl
+	 * @return searchisko result
+	 * @throws IOException
+	 */
+	protected String submitData(HttpClient client, Set<String> accountsToUpdate, String searchiskoUrl) throws IOException {
 		log.info("Submit data to Searchisko");
 		if (log.isDebugEnabled()) {
 			log.debug("Accounts: " + accountsToUpdate);
 		}
+
+		if (accountsToUpdate == null || accountsToUpdate.size() == 0) {
+			throw new RuntimeException("Cannot notify searchisko without usernames");
+		}
+
+		byte[] json = getJsonData(accountsToUpdate);
+
+		PostMethod method = new PostMethod(searchiskoUrl + REST_API);
+
+		// no retry
+		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+				new DefaultHttpMethodRetryHandler(0, false));
+
+		try {
+			method.setRequestEntity(new ByteArrayRequestEntity(json, "application/json; charset=UTF-8"));
+
+			// Execute the method.
+			int statusCode = client.executeMethod(method);
+
+			if (statusCode != HttpStatus.SC_OK) {
+				if (statusCode == HttpStatus.SC_FORBIDDEN) {
+					throw new IOException("Bad Credentials to access Searchisko");
+				}
+				throw new IOException("Cannot notify Searchisko. Response: " + method.getStatusLine());
+			}
+
+			// Read the response body.
+			String response = method.getResponseBodyAsString(100);
+
+			if (response.contains("id")) {
+				if (log.isInfoEnabled()) {
+					log.info("All accounts notified in searchisko. Response" + response);
+				}
+				accountsToUpdate.clear();
+			}
+			return response;
+		} catch (HttpException e) {
+			log.error("Fatal protocol violation during searchisko post", e);
+			throw e;
+		} catch (IOException e) {
+			log.error("Fatal transport error", e);
+			throw e;
+		} finally {
+			// Release the connection.
+			method.releaseConnection();
+		}
+	}
+
+	protected static byte[] getJsonData(Set<String> accountsToUpdate) throws IOException {
+		Map<String, Object> data = new HashMap<String, Object>();
+		data.put("contributor_type_specific_code_type", "jbossorg_username");
+		data.put("contributor_type_specific_code_value", accountsToUpdate);
+
+		return new ObjectMapper().writeValueAsBytes(data);
 	}
 
 	public void stopExecution() {
