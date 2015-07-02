@@ -39,7 +39,7 @@ public class SearchiskoUpdateAccountProfileExecutorTest {
 
 		// http://stackoverflow.com/questions/23870899/sslprotocolexception-handshake-alert-unrecognized-name-client-side-code-worka
 		System.setProperty("jsse.enableSNIExtension", "false");
-		String response = executor.submitData(client, usernames, url);
+		String response = executor.submitData(client, usernames, url, SearchiskoUpdateAccountProfileExecutor.REST_API_DEFAULT);
 		System.out.println("Response: " + response);
 	}
 
@@ -64,7 +64,7 @@ public class SearchiskoUpdateAccountProfileExecutorTest {
 	@Test(expected = RuntimeException.class)
 	public void testSubmitData_noAccountsError() throws Exception {
 		SearchiskoUpdateAccountProfileExecutor executor = new SearchiskoUpdateAccountProfileExecutor(null, 1, 0);
-		executor.submitData(null, null, null);
+		executor.submitData(null, null, null, null);
 	}
 
 }

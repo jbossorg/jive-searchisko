@@ -8,7 +8,7 @@
 	<name>searchisko</name>
 	<description>Jive and Searchisko integration</description>
 	<url>https://github.com/jbossorg/jive-searchisko</url>
-	<version>7.0.0</version>
+	<version>7.0.1</version>
 
 	<parent>
 		<groupId>com.jivesoftware.maven</groupId>

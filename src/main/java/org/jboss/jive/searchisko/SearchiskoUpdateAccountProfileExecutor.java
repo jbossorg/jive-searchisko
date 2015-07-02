@@ -46,8 +46,7 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 
 	public static final String CFG_KEY_SEARCHISKO_PROFILE_NOTIFY_INTERVAL = "jbossorg.searchisko.profile.notify.interval";
 
-
-	private static final String REST_API = "/v1/rest/tasks/task/update_contributor_profile";
+	protected static final String REST_API_DEFAULT = "/v2/rest/tasks/task/update_contributor_profile";
 
 
 	public SearchiskoUpdateAccountProfileExecutor(Set<String> accountsToUpdate, int executorNumber,
@@ -92,6 +91,7 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 				if (isEnabled()) {
 					if (accountsToUpdate.size() > 0) {
 						String searchiskoUrl = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_URL);
+						String searchiskoRestApi = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_REST_API, REST_API_DEFAULT);
 						String searchiskoName = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_NAME);
 						String searchiskoPwd = JiveGlobals.getJiveProperty(SearchiskoManagerImpl.CFG_KEY_SEARCHISKO_PASSWORD);
 
@@ -101,7 +101,7 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 						} else {
 							HttpClient client = createDefaultClient(searchiskoUrl, searchiskoName, searchiskoPwd);
 
-							submitData(client, accountsToUpdate, searchiskoUrl);
+							submitData(client, accountsToUpdate, searchiskoUrl, searchiskoRestApi);
 						}
 					} else {
 						log.trace("Nothing in the searchisko queue");
@@ -143,7 +143,7 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 	 * @return searchisko result
 	 * @throws IOException
 	 */
-	protected String submitData(HttpClient client, Set<String> accountsToUpdate, String searchiskoUrl) throws IOException {
+	protected String submitData(HttpClient client, Set<String> accountsToUpdate, String searchiskoUrl, String searchiskoRestApi) throws IOException {
 		log.info("Submit data to Searchisko");
 		if (log.isDebugEnabled()) {
 			log.debug("Accounts: " + accountsToUpdate);
@@ -155,7 +155,7 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 
 		byte[] json = getJsonData(accountsToUpdate);
 
-		PostMethod method = new PostMethod(searchiskoUrl + REST_API);
+		PostMethod method = new PostMethod(searchiskoUrl + searchiskoRestApi);
 
 		// no retry
 		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,

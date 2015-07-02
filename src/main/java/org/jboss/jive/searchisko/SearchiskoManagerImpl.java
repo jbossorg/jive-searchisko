@@ -23,6 +23,8 @@ public class SearchiskoManagerImpl implements SearchiskoManager, EventListener<A
 
 	public static final String CFG_KEY_SEARCHISKO_URL = "jbossorg.searchisko.url";
 
+	public static final String CFG_KEY_SEARCHISKO_REST_API = "jbossorg.searchisko.rest.api.update.profile";
+
 	public static final String CFG_KEY_SEARCHISKO_NAME = "jbossorg.searchisko.auth.name";
 
 	public static final String CFG_KEY_SEARCHISKO_PASSWORD = "jbossorg.searchisko.auth.password";

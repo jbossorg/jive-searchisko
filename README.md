@@ -18,9 +18,11 @@ In Jive system properties it's possible to configure this plugin:
 
 1. `jbossorg.searchisko.url` - URL of searchisko e.g. https://dcp.jboss.org
 
-2. `jbossorg.searchisko.auth.name` - username
+2. `jbossorg.searchisko.rest.api.update.profile` - REST API for updating contributor profile. Default `/v2/rest/tasks/task/update_contributor_profile`
 
-3. `jbossorg.searchisko.auth.password` - password
+3. `jbossorg.searchisko.auth.name` - username
+
+4. `jbossorg.searchisko.auth.password` - password
 
 ### Profile Change Notification
 
