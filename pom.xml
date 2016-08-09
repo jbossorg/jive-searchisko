@@ -8,12 +8,12 @@
 	<name>searchisko</name>
 	<description>Jive and Searchisko integration</description>
 	<url>https://github.com/jbossorg/jive-searchisko</url>
-	<version>7.0.1</version>
+	<version>8.0.0</version>
 
 	<parent>
 		<groupId>com.jivesoftware.maven</groupId>
 		<artifactId>jive-parent-pom</artifactId>
-		<version>7.0.3.1-0</version>
+		<version>8.0.4.0-3</version>
 	</parent>
 
 	<inceptionYear>2014</inceptionYear>
@@ -101,7 +101,7 @@
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
+			<artifactId>${servlet.api.artifactId}</artifactId>
 		</dependency>
 
 		<dependency>
