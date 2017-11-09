@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.jivesoftware.community.JiveGlobals;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
@@ -19,6 +18,7 @@ import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.auth.AuthScope;
+import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
@@ -26,6 +26,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
+
+import com.jivesoftware.community.JiveGlobals;
 
 /**
  * Executor for notifying Searchisko about changed usernames
@@ -160,6 +162,8 @@ public class SearchiskoUpdateAccountProfileExecutor extends Thread {
 		// no retry
 		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
 				new DefaultHttpMethodRetryHandler(0, false));
+		// ignore cookies
+		method.getParams().setCookiePolicy(CookiePolicy.IGNORE_COOKIES);
 
 		try {
 			method.setRequestEntity(new ByteArrayRequestEntity(json, "application/json; charset=UTF-8"));
